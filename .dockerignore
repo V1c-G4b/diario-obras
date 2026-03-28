@@ -1,0 +1,33 @@
+# Binaries
+main
+api
+*.exe
+*.test
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Environment
+.env
+.env.*
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose*.yml
+
+# Docs
+README.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+tmp/

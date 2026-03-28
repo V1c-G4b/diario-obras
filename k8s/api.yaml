@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diario-obra-api
+  namespace: diario-obra
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: diario-obra-api
+  template:
+    metadata:
+      labels:
+        app: diario-obra-api
+    spec:
+      containers:
+        - name: diario-obra-api
+          image: diario-obras-api:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: diario-obra-config
+            - secretRef:
+                name: diario-obra-secret
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: diario-obra
+spec:
+  selector:
+    app: diario-obra-api
+  ports:
+    - port: 8080
+      targetPort: 8080
