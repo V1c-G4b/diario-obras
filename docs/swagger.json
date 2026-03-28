@@ -1,0 +1,1152 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API para gerenciamento de diário de obras, entradas diárias, fotos e responsáveis.",
+        "title": "Diário de Obras API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/entradas/{id}": {
+            "get": {
+                "description": "Retorna uma entrada pelo seu ID, incluindo fotos e responsável",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entradas"
+                ],
+                "summary": "Buscar entrada por ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da entrada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove uma entrada e todas as suas fotos associadas",
+                "tags": [
+                    "Entradas"
+                ],
+                "summary": "Deletar entrada",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da entrada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sem conteúdo"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/entradas/{id}/fotos": {
+            "get": {
+                "description": "Retorna todas as fotos de uma entrada específica",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Fotos"
+                ],
+                "summary": "Listar fotos de uma entrada",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da entrada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Faz upload de uma foto para uma entrada. Aceita jpg, png, webp, heic (máx 10MB)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Fotos"
+                ],
+                "summary": "Upload de foto",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da entrada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Arquivo de imagem",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Descrição da foto",
+                        "name": "descricao",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/entradas/{id}/fotos/{fotoId}": {
+            "delete": {
+                "description": "Remove uma foto do banco e do storage",
+                "tags": [
+                    "Fotos"
+                ],
+                "summary": "Deletar foto",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da entrada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da foto",
+                        "name": "fotoId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sem conteúdo"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/obras": {
+            "get": {
+                "description": "Retorna todas as obras",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Obras"
+                ],
+                "summary": "Listar obras",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Cria uma nova obra",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Obras"
+                ],
+                "summary": "Criar obra",
+                "parameters": [
+                    {
+                        "description": "Dados da obra",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_adapter_handler.CreateObraRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/obras/{id}": {
+            "get": {
+                "description": "Retorna uma obra pelo seu ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Obras"
+                ],
+                "summary": "Buscar obra por ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da obra",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Atualiza uma obra existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Obras"
+                ],
+                "summary": "Atualizar obra",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da obra",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados para atualização",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_adapter_handler.UpdateObraRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove uma obra pelo ID",
+                "tags": [
+                    "Obras"
+                ],
+                "summary": "Deletar obra",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da obra",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sem conteúdo"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/obras/{id}/entradas": {
+            "get": {
+                "description": "Retorna todas as entradas de uma obra específica",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entradas"
+                ],
+                "summary": "Listar entradas de uma obra",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da obra",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Cria uma nova entrada (registro diário) para uma obra",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Entradas"
+                ],
+                "summary": "Criar entrada",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID da obra",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados da entrada",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_adapter_handler.CreateEntradaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/responsaveis": {
+            "get": {
+                "description": "Retorna todos os responsáveis",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Responsáveis"
+                ],
+                "summary": "Listar responsáveis",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Cria um novo responsável",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Responsáveis"
+                ],
+                "summary": "Criar responsável",
+                "parameters": [
+                    {
+                        "description": "Dados do responsável",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_adapter_handler.CreateResponsavelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/responsaveis/{id}": {
+            "get": {
+                "description": "Retorna um responsável pelo seu ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Responsáveis"
+                ],
+                "summary": "Buscar responsável por ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID do responsável",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Atualiza um responsável existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Responsáveis"
+                ],
+                "summary": "Atualizar responsável",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID do responsável",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados para atualização",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_adapter_handler.UpdateResponsavelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove um responsável pelo ID",
+                "tags": [
+                    "Responsáveis"
+                ],
+                "summary": "Deletar responsável",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID do responsável",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sem conteúdo"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_v1c-g4b_diario-obras_internal_domain_entity.CondicaoClimatica": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-comments": {
+                "Chuvoso": "2",
+                "Ensolarado": "0",
+                "Nublado": "1",
+                "Tempestade": "3"
+            },
+            "x-enum-descriptions": [
+                "0",
+                "1",
+                "2",
+                "3"
+            ],
+            "x-enum-varnames": [
+                "Ensolarado",
+                "Nublado",
+                "Chuvoso",
+                "Tempestade"
+            ]
+        },
+        "github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada": {
+            "type": "object",
+            "properties": {
+                "condicoes_climaticas": {
+                    "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.CondicaoClimatica"
+                },
+                "criado_em": {
+                    "type": "string"
+                },
+                "custo_dia": {
+                    "type": "number"
+                },
+                "etapa": {
+                    "type": "string"
+                },
+                "fotos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "obra_id": {
+                    "type": "string"
+                },
+                "observacoes": {
+                    "type": "string"
+                },
+                "paralisacao": {
+                    "type": "boolean"
+                },
+                "progresso_etapa": {
+                    "type": "number"
+                },
+                "quantidade_trabalhadores": {
+                    "type": "integer"
+                },
+                "responsavel": {
+                    "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel"
+                },
+                "responsavel_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto": {
+            "type": "object",
+            "properties": {
+                "criado_em": {
+                    "type": "string"
+                },
+                "descricao": {
+                    "type": "string"
+                },
+                "entrada_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "url_s3": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra": {
+            "type": "object",
+            "properties": {
+                "data_estimada": {
+                    "type": "string"
+                },
+                "data_inicio": {
+                    "type": "string"
+                },
+                "endereco": {
+                    "type": "string"
+                },
+                "entradas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada"
+                    }
+                },
+                "gasto_total": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nome": {
+                    "type": "string"
+                },
+                "progresso": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel": {
+            "type": "object",
+            "properties": {
+                "cargo": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nome": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_adapter_handler.CreateEntradaRequest": {
+            "type": "object",
+            "required": [
+                "etapa",
+                "quantidade_trabalhadores",
+                "responsavel_id"
+            ],
+            "properties": {
+                "condicoes_climaticas": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.CondicaoClimatica"
+                        }
+                    ],
+                    "example": 0
+                },
+                "custo_dia": {
+                    "type": "number",
+                    "example": 15000
+                },
+                "etapa": {
+                    "type": "string",
+                    "example": "Fundação"
+                },
+                "observacoes": {
+                    "type": "string",
+                    "example": "Fundação concluída sem intercorrências"
+                },
+                "paralisacao": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "progresso_etapa": {
+                    "type": "number",
+                    "example": 75.5
+                },
+                "quantidade_trabalhadores": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "responsavel_id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "internal_adapter_handler.CreateObraRequest": {
+            "type": "object",
+            "required": [
+                "data_estimada",
+                "data_inicio",
+                "endereco",
+                "nome"
+            ],
+            "properties": {
+                "data_estimada": {
+                    "type": "string",
+                    "example": "2026-12-31T00:00:00Z"
+                },
+                "data_inicio": {
+                    "type": "string",
+                    "example": "2026-04-01T00:00:00Z"
+                },
+                "endereco": {
+                    "type": "string",
+                    "example": "Rua das Flores, 123"
+                },
+                "nome": {
+                    "type": "string",
+                    "example": "Residencial Aurora"
+                }
+            }
+        },
+        "internal_adapter_handler.CreateResponsavelRequest": {
+            "type": "object",
+            "required": [
+                "cargo",
+                "email",
+                "nome"
+            ],
+            "properties": {
+                "cargo": {
+                    "type": "string",
+                    "example": "Engenheiro Civil"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "joao@exemplo.com"
+                },
+                "nome": {
+                    "type": "string",
+                    "example": "João Silva"
+                }
+            }
+        },
+        "internal_adapter_handler.UpdateObraRequest": {
+            "type": "object",
+            "properties": {
+                "data_estimada": {
+                    "type": "string",
+                    "example": "2027-06-30T00:00:00Z"
+                },
+                "data_inicio": {
+                    "type": "string",
+                    "example": "2026-04-01T00:00:00Z"
+                },
+                "endereco": {
+                    "type": "string",
+                    "example": "Rua das Flores, 456"
+                },
+                "nome": {
+                    "type": "string",
+                    "example": "Residencial Aurora II"
+                }
+            }
+        },
+        "internal_adapter_handler.UpdateResponsavelRequest": {
+            "type": "object",
+            "properties": {
+                "cargo": {
+                    "type": "string",
+                    "example": "Engenheiro Chefe"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "joao.silva@exemplo.com"
+                },
+                "nome": {
+                    "type": "string",
+                    "example": "João da Silva"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,781 @@
+basePath: /api/v1
+definitions:
+  github_com_v1c-g4b_diario-obras_internal_domain_entity.CondicaoClimatica:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    type: integer
+    x-enum-comments:
+      Chuvoso: "2"
+      Ensolarado: "0"
+      Nublado: "1"
+      Tempestade: "3"
+    x-enum-descriptions:
+    - "0"
+    - "1"
+    - "2"
+    - "3"
+    x-enum-varnames:
+    - Ensolarado
+    - Nublado
+    - Chuvoso
+    - Tempestade
+  github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada:
+    properties:
+      condicoes_climaticas:
+        $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.CondicaoClimatica'
+      criado_em:
+        type: string
+      custo_dia:
+        type: number
+      etapa:
+        type: string
+      fotos:
+        items:
+          $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto'
+        type: array
+      id:
+        type: string
+      obra_id:
+        type: string
+      observacoes:
+        type: string
+      paralisacao:
+        type: boolean
+      progresso_etapa:
+        type: number
+      quantidade_trabalhadores:
+        type: integer
+      responsavel:
+        $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel'
+      responsavel_id:
+        type: string
+    type: object
+  github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto:
+    properties:
+      criado_em:
+        type: string
+      descricao:
+        type: string
+      entrada_id:
+        type: string
+      id:
+        type: string
+      url_s3:
+        type: string
+    type: object
+  github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra:
+    properties:
+      data_estimada:
+        type: string
+      data_inicio:
+        type: string
+      endereco:
+        type: string
+      entradas:
+        items:
+          $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada'
+        type: array
+      gasto_total:
+        type: number
+      id:
+        type: string
+      nome:
+        type: string
+      progresso:
+        type: number
+    type: object
+  github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel:
+    properties:
+      cargo:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      nome:
+        type: string
+    type: object
+  internal_adapter_handler.CreateEntradaRequest:
+    properties:
+      condicoes_climaticas:
+        allOf:
+        - $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.CondicaoClimatica'
+        example: 0
+      custo_dia:
+        example: 15000
+        type: number
+      etapa:
+        example: Fundação
+        type: string
+      observacoes:
+        example: Fundação concluída sem intercorrências
+        type: string
+      paralisacao:
+        example: false
+        type: boolean
+      progresso_etapa:
+        example: 75.5
+        type: number
+      quantidade_trabalhadores:
+        example: 12
+        type: integer
+      responsavel_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - etapa
+    - quantidade_trabalhadores
+    - responsavel_id
+    type: object
+  internal_adapter_handler.CreateObraRequest:
+    properties:
+      data_estimada:
+        example: "2026-12-31T00:00:00Z"
+        type: string
+      data_inicio:
+        example: "2026-04-01T00:00:00Z"
+        type: string
+      endereco:
+        example: Rua das Flores, 123
+        type: string
+      nome:
+        example: Residencial Aurora
+        type: string
+    required:
+    - data_estimada
+    - data_inicio
+    - endereco
+    - nome
+    type: object
+  internal_adapter_handler.CreateResponsavelRequest:
+    properties:
+      cargo:
+        example: Engenheiro Civil
+        type: string
+      email:
+        example: joao@exemplo.com
+        type: string
+      nome:
+        example: João Silva
+        type: string
+    required:
+    - cargo
+    - email
+    - nome
+    type: object
+  internal_adapter_handler.UpdateObraRequest:
+    properties:
+      data_estimada:
+        example: "2027-06-30T00:00:00Z"
+        type: string
+      data_inicio:
+        example: "2026-04-01T00:00:00Z"
+        type: string
+      endereco:
+        example: Rua das Flores, 456
+        type: string
+      nome:
+        example: Residencial Aurora II
+        type: string
+    type: object
+  internal_adapter_handler.UpdateResponsavelRequest:
+    properties:
+      cargo:
+        example: Engenheiro Chefe
+        type: string
+      email:
+        example: joao.silva@exemplo.com
+        type: string
+      nome:
+        example: João da Silva
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API para gerenciamento de diário de obras, entradas diárias, fotos
+    e responsáveis.
+  title: Diário de Obras API
+  version: "1.0"
+paths:
+  /entradas/{id}:
+    delete:
+      description: Remove uma entrada e todas as suas fotos associadas
+      parameters:
+      - description: ID da entrada
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Sem conteúdo
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Deletar entrada
+      tags:
+      - Entradas
+    get:
+      description: Retorna uma entrada pelo seu ID, incluindo fotos e responsável
+      parameters:
+      - description: ID da entrada
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Buscar entrada por ID
+      tags:
+      - Entradas
+  /entradas/{id}/fotos:
+    get:
+      description: Retorna todas as fotos de uma entrada específica
+      parameters:
+      - description: ID da entrada
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar fotos de uma entrada
+      tags:
+      - Fotos
+    post:
+      consumes:
+      - multipart/form-data
+      description: Faz upload de uma foto para uma entrada. Aceita jpg, png, webp,
+        heic (máx 10MB)
+      parameters:
+      - description: ID da entrada
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Arquivo de imagem
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Descrição da foto
+        in: formData
+        name: descricao
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Foto'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload de foto
+      tags:
+      - Fotos
+  /entradas/{id}/fotos/{fotoId}:
+    delete:
+      description: Remove uma foto do banco e do storage
+      parameters:
+      - description: ID da entrada
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID da foto
+        format: uuid
+        in: path
+        name: fotoId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Sem conteúdo
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Deletar foto
+      tags:
+      - Fotos
+  /obras:
+    get:
+      description: Retorna todas as obras
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar obras
+      tags:
+      - Obras
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova obra
+      parameters:
+      - description: Dados da obra
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_adapter_handler.CreateObraRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar obra
+      tags:
+      - Obras
+  /obras/{id}:
+    delete:
+      description: Remove uma obra pelo ID
+      parameters:
+      - description: ID da obra
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Sem conteúdo
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Deletar obra
+      tags:
+      - Obras
+    get:
+      description: Retorna uma obra pelo seu ID
+      parameters:
+      - description: ID da obra
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Buscar obra por ID
+      tags:
+      - Obras
+    put:
+      consumes:
+      - application/json
+      description: Atualiza uma obra existente
+      parameters:
+      - description: ID da obra
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Dados para atualização
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_adapter_handler.UpdateObraRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Obra'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar obra
+      tags:
+      - Obras
+  /obras/{id}/entradas:
+    get:
+      description: Retorna todas as entradas de uma obra específica
+      parameters:
+      - description: ID da obra
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar entradas de uma obra
+      tags:
+      - Entradas
+    post:
+      consumes:
+      - application/json
+      description: Cria uma nova entrada (registro diário) para uma obra
+      parameters:
+      - description: ID da obra
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Dados da entrada
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_adapter_handler.CreateEntradaRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Entrada'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar entrada
+      tags:
+      - Entradas
+  /responsaveis:
+    get:
+      description: Retorna todos os responsáveis
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar responsáveis
+      tags:
+      - Responsáveis
+    post:
+      consumes:
+      - application/json
+      description: Cria um novo responsável
+      parameters:
+      - description: Dados do responsável
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_adapter_handler.CreateResponsavelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar responsável
+      tags:
+      - Responsáveis
+  /responsaveis/{id}:
+    delete:
+      description: Remove um responsável pelo ID
+      parameters:
+      - description: ID do responsável
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Sem conteúdo
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Deletar responsável
+      tags:
+      - Responsáveis
+    get:
+      description: Retorna um responsável pelo seu ID
+      parameters:
+      - description: ID do responsável
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Buscar responsável por ID
+      tags:
+      - Responsáveis
+    put:
+      consumes:
+      - application/json
+      description: Atualiza um responsável existente
+      parameters:
+      - description: ID do responsável
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Dados para atualização
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_adapter_handler.UpdateResponsavelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_v1c-g4b_diario-obras_internal_domain_entity.Responsavel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualizar responsável
+      tags:
+      - Responsáveis
+swagger: "2.0"
