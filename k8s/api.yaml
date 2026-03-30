@@ -47,6 +47,8 @@ kind: Service
 metadata:
   name: api-service
   namespace: diario-obra
+  labels:
+    app: diario-obra-api
 spec:
   selector:
     app: diario-obra-api

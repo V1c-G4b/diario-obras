@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: diario-obras-api
+      app: diario-obra-api
   endpoints:
     - port: http
       path: /api/v1/metrics
