@@ -26,6 +26,10 @@ vendor/
 .env
 .env.*
 
+# Helm secrets
+chart/values-secrets.yaml
+chart/values-*.secret.yaml
+
 # OS
 .DS_Store
 Thumbs.db

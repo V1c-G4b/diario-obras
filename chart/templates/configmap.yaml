@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: diario-obra-config
+  namespace: {{ .Release.Namespace }}
+data:
+  DB_HOST: "db-service"
+  DB_PORT: "{{ .Values.postgres.port }}"
+  DB_NAME: "diario_obra"
+  MINIO_ENDPOINT: "minio-service:9000"
+  MINIO_BUCKET: {{ .Values.minio.bucket | quote }}

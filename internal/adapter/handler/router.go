@@ -1,10 +1,14 @@
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
 
 func SetupRoutes(r *gin.Engine, obraHandler *ObraHandler, entradaHandler *EntradaHandler, responsavelHandler *ResponsavelHandler, FotoHandler *FotoHandler) {
 	api := r.Group("/api/v1")
 	{
+		api.GET("/metrics", gin.WrapH(promhttp.Handler()))
 		obras := api.Group("/obras")
 		{
 			obras.POST("", obraHandler.Create)
