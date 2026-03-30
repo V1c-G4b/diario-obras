@@ -12,6 +12,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/v1c-g4b/diario-obras/internal/adapter/handler"
+	"github.com/v1c-g4b/diario-obras/internal/adapter/handler/middleware"
 	"github.com/v1c-g4b/diario-obras/internal/adapter/repository"
 	"github.com/v1c-g4b/diario-obras/internal/adapter/storage"
 	"github.com/v1c-g4b/diario-obras/internal/application"
@@ -84,7 +85,7 @@ func main() {
 	fotoHandler := handler.NewFotoHandler(fotoService)
 
 	router := gin.Default()
-
+	router.Use(middleware.PrometheusMiddleware())
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
