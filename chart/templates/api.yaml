@@ -56,3 +56,4 @@ spec:
   ports:
     - port: {{.Values.api.port}}
       targetPort: {{.Values.api.port}}
+      name: http
