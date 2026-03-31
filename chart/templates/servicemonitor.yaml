@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: {{.Values.api.image}}
+      app: diario-obra-api
   endpoints:
     - port: http
       path: /api/v1/metrics

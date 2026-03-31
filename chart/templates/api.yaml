@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{.Values.api.image}}
+  name: diario-obra-api
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{.Values.api.replicas}}
   selector:
     matchLabels:
-      app: {{.Values.api.image}}
+      app: diario-obra-api
   template:
     metadata:
       labels:
-        app: {{.Values.api.image}}
+        app: diario-obra-api
     spec:
       containers:
-        - name: {{.Values.api.image}}
+        - name: api
           image: {{.Values.api.image}}:{{.Values.api.tag}}
           imagePullPolicy: {{.Values.api.pullPolicy}}
           envFrom:
@@ -51,10 +51,10 @@ metadata:
   name: api-service
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{.Values.api.image}}
+    app: diario-obra-api
 spec:
   selector:
-    app: {{.Values.api.image}}
+    app: diario-obra-api
   ports:
     - port: {{.Values.api.port}}
       targetPort: {{.Values.api.port}}
