@@ -1,4 +1,6 @@
+{{- if not .Values.skipNamespace }}
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: diario-obra
+  name: {{ .Release.Namespace }}
+{{- end }}
