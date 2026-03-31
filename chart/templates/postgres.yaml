@@ -28,6 +28,10 @@ spec:
       labels:
         app: postgres
     spec:
+      {{- if .Values.postgres.securityContext }}
+      securityContext:
+        {{- toYaml .Values.postgres.securityContext | nindent 8 }}
+      {{- end }}
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}
@@ -36,19 +40,19 @@ spec:
               name: postgres
           volumeMounts:
             - name: postgres-data
-              mountPath: /var/lib/postgresql/data
+              mountPath: {{ .Values.postgres.dataPath }}
           env:
-            - name: POSTGRES_USER
+            - name: {{ .Values.postgres.envUser }}
               valueFrom:
                 secretKeyRef:
                   name: diario-obra-secret
                   key: DB_USER
-            - name: POSTGRES_PASSWORD
+            - name: {{ .Values.postgres.envPassword }}
               valueFrom:
                 secretKeyRef:
                   name: diario-obra-secret
                   key: DB_PASSWORD
-            - name: POSTGRES_DB
+            - name: {{ .Values.postgres.envDatabase }}
               valueFrom:
                 configMapKeyRef:
                   name: diario-obra-config
