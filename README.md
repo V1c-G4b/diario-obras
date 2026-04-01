@@ -10,8 +10,10 @@ Projeto de estudo de **Go + Docker + Kubernetes** com arquitetura Ports and Adap
 - **PostgreSQL** — Banco de dados
 - **MinIO** — Object storage S3-compatible (fotos)
 - **Swagger** — Documentação interativa da API
+- **Prometheus** — Métricas de requisições HTTP
 - **Docker** — Multi-stage build com distroless (35MB)
 - **Kubernetes** — Orquestração com Kind (local)
+- **Helm** — Chart para deploy em Kubernetes e OpenShift
 
 ## Arquitetura
 
@@ -125,6 +127,7 @@ erDiagram
 |--------|------|-----------|
 | GET | `/ping` | Health check |
 | GET | `/swagger/*any` | Documentacao Swagger |
+| GET | `/api/v1/metrics` | Metricas Prometheus |
 | | | |
 | **Obras** | | |
 | POST | `/api/v1/obras` | Criar obra |
@@ -186,6 +189,33 @@ kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.
 curl http://localhost/ping
 ```
 
+## Rodando com Helm
+
+```bash
+# Criar secrets (editar com credenciais reais)
+cp chart/values-secrets.yaml chart/my-secrets.yaml
+# editar chart/my-secrets.yaml
+
+# Deploy local (Kind)
+helm install diario-obra ./chart -n diario-obra --create-namespace -f chart/my-secrets.yaml
+
+# Deploy OpenShift
+helm install diario-obra ./chart -n diario-obra --create-namespace \
+  -f chart/values-openshift.yaml \
+  -f chart/my-secrets.yaml
+```
+
+## Observabilidade
+
+O middleware Prometheus coleta automaticamente:
+
+- `http_requests_total` — contador por metodo, rota e status
+- `http_request_duration_seconds` — histograma de latencia
+
+Endpoint de metricas: `GET /api/v1/metrics`
+
+No Kubernetes, o `ServiceMonitor` faz scraping automatico a cada 15s para integracao com Prometheus Operator.
+
 ## Estrutura do projeto
 
 ```
@@ -201,6 +231,7 @@ curl http://localhost/ping
 │       └── storage/       # MinIO S3 implementation
 ├── docs/                  # Swagger (gerado pelo swag)
 ├── k8s/                   # Kubernetes manifests
+├── chart/                 # Helm chart (Kind + OpenShift)
 ├── Dockerfile             # Multi-stage distroless (35MB)
 ├── docker-compose.yml
 └── kind-config.yaml
@@ -219,7 +250,9 @@ curl http://localhost/ping
 - [x] Fase 1 — Docker multi-stage + distroless
 - [x] Fase 2 — MinIO upload de fotos
 - [x] Fase 3 — Kubernetes com Kind
-- [ ] Fase 4 — Helm chart + OpenShift + CI/CD
+- [x] Fase 4 — Helm chart + metricas Prometheus
+- [x] Fase 5 — Suporte a OpenShift
+- [ ] Fase 6 — CI/CD
 
 ## Autor
 
