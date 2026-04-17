@@ -1,0 +1,32 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy
+  namespace: tekton-pipelines
+spec:
+  workspaces:
+    - name: source
+  params:
+    - name: database-user
+      description: usuario do banco de dados
+    - name: database-password
+      description: senha do banco de dados
+    - name: storage-user
+      description: usuario do storage
+    - name: storage-password
+      description: senha do storage
+  steps:
+    - name: git-clone
+      image: alpine/git
+      workingDir: $(workspaces.source.path)
+      script: |
+        git clone https://github.com/v1c-g4b/diario-obras.git .
+    - name: helm
+      image: alpine/helm
+      script: |
+        helm upgrade diario-obra $(workspaces.source.path)/chart \
+        --namespace diario-obra \
+        --set database.user=$(params.database-user) \
+        --set database.password=$(params.database-password) \
+        --set storage.user=$(params.storage-user) \
+        --set storage.password=$(params.storage-password)

@@ -46,3 +46,5 @@ tmp/
 .terraform.lock.hcl
 crash.log
 crash.*.log
+tekton/taskrun-*.yaml
+tekton/pipelinerun.yaml
