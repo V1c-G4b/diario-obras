@@ -2,7 +2,7 @@
 
 API REST para registro digital de obras de construção civil. O engenheiro registra entradas diárias com progresso, custos, condições climáticas e fotos.
 
-Projeto de estudo de **Go + Docker + Kubernetes** com arquitetura Ports and Adapters.
+Projeto de estudo de **Go + Docker + Kubernetes + IaC + CI/CD** com arquitetura Ports and Adapters.
 
 ## Stack
 
@@ -10,10 +10,12 @@ Projeto de estudo de **Go + Docker + Kubernetes** com arquitetura Ports and Adap
 - **PostgreSQL** — Banco de dados
 - **MinIO** — Object storage S3-compatible (fotos)
 - **Swagger** — Documentação interativa da API
-- **Prometheus** — Métricas de requisições HTTP
+- **Prometheus + Grafana** — Métricas e dashboards (via kube-prometheus-stack)
 - **Docker** — Multi-stage build com distroless (35MB)
-- **Kubernetes** — Orquestração com Kind (local)
+- **Kubernetes** — Orquestração com Kind (local) e OpenShift
 - **Helm** — Chart para deploy em Kubernetes e OpenShift
+- **Terraform** — Provisionamento declarativo do cluster (namespaces, Helm releases, Tekton)
+- **Tekton** — Pipeline CI/CD nativa em Kubernetes (build com Kaniko + deploy com Helm)
 
 ## Arquitetura
 
@@ -71,6 +73,89 @@ flowchart LR
     Repo -.->|implements| Port
     Storage -.->|implements| Port
     Port --> Entity
+```
+
+## Infraestrutura completa
+
+```mermaid
+flowchart TB
+    Dev([Developer])
+    TF[Terraform<br/>kind-local context]
+    Dev -->|terraform apply| TF
+
+    subgraph Host["Host (Docker)"]
+        subgraph Kind["Kind Cluster — diario-obra"]
+            direction TB
+
+            TF -.->|provisiona| NS_APP
+            TF -.->|helm_release monitoring| NS_MON
+            TF -.->|helm_release diario-obra| NS_APP
+            TF -.->|kubectl apply| NS_TEK
+
+            subgraph NS_TEK["ns: tekton-pipelines"]
+                TektonCtrl[Tekton Controller]
+                RBAC[ClusterRole + Binding<br/>tekton-helm-role]
+                Pipeline[Pipeline: deploy]
+                TaskBuild[Task: build-image<br/>git-clone → Kaniko → ctr import]
+                TaskDeploy[Task: deploy<br/>helm upgrade]
+                Pipeline --> TaskBuild
+                Pipeline --> TaskDeploy
+                TaskBuild -->|ctr k8s.io| Containerd[(containerd do nó)]
+            end
+
+            subgraph NS_MON["ns: monitoring"]
+                Prom[Prometheus Operator<br/>+ Prometheus]
+                Graf[Grafana<br/>Ingress exposto]
+                Prom --> Graf
+            end
+
+            subgraph NS_APP["ns: diario-obra"]
+                Ing[Ingress nginx]
+                APISvc[Service: api-service]
+                API1[Pod: API replica 1]
+                API2[Pod: API replica 2]
+                HPA[HPA]
+                SM[ServiceMonitor]
+                PG[(PostgreSQL<br/>StatefulSet)]
+                Minio[(MinIO<br/>Deployment)]
+                DBSvc[Service: db-service]
+                MinioSvc[Service: minio-service]
+
+                Ing --> APISvc
+                APISvc --> API1
+                APISvc --> API2
+                HPA -.->|scale| API1
+                HPA -.->|scale| API2
+                API1 --> DBSvc --> PG
+                API2 --> DBSvc
+                API1 --> MinioSvc --> Minio
+                API2 --> MinioSvc
+            end
+
+            TaskDeploy -->|helm upgrade| NS_APP
+            SM -.->|scrape| Prom
+            Prom -.->|coleta /metrics| APISvc
+        end
+    end
+
+    Client([Engenheiro na obra]) -->|HTTP :80| Ing
+    Admin([Admin]) -->|HTTP| Graf
+```
+
+## Pipeline CI/CD (Tekton)
+
+```mermaid
+flowchart LR
+    Trigger([TaskRun / PipelineRun])
+    Trigger --> Build
+
+    subgraph Pipeline: deploy
+        Build[Task: build-image<br/>git-clone + Kaniko + ctr import]
+        Deploy[Task: deploy<br/>helm upgrade]
+        Build --> Deploy
+    end
+
+    Deploy --> Cluster[(Cluster Kind / OpenShift)]
 ```
 
 ## Modelo de dados
@@ -162,7 +247,7 @@ docker compose up -d
 curl http://localhost:8080/ping
 ```
 
-## Rodando com Kubernetes (Kind)
+## Rodando com Kubernetes (Kind) — manifests
 
 ```bash
 # Criar cluster
@@ -205,6 +290,51 @@ helm install diario-obra ./chart -n diario-obra --create-namespace \
   -f chart/my-secrets.yaml
 ```
 
+## Provisionamento com Terraform
+
+O Terraform provisiona, em um cluster Kind já existente (contexto `kind-local`):
+
+- Namespace `diario-obra`
+- Helm release do kube-prometheus-stack (Prometheus + Grafana) no namespace `monitoring`
+- Helm release da aplicação usando o chart em `./chart`
+- Instalação das Tekton Pipelines (via `kubectl apply`)
+
+```bash
+cd terraform
+
+# Criar terraform.tfvars com as credenciais
+cat > terraform.tfvars <<EOF
+database_user          = "diario"
+database_password      = "..."
+storage_user           = "minio"
+storage_password       = "..."
+grafana_admin_password = "..."
+EOF
+
+terraform init
+terraform apply
+```
+
+## Pipeline Tekton
+
+A pipeline `deploy` roda dois Tasks sequenciais em um workspace compartilhado:
+
+1. **build-image** — clona o repo, builda a imagem com Kaniko (`--no-push --tar-path`) e importa o tar no containerd do nó via `ctr` (namespace `k8s.io`).
+2. **deploy** — roda `helm upgrade` do chart com as credenciais injetadas por parâmetro.
+
+```bash
+# RBAC para a ServiceAccount default do namespace tekton-pipelines
+kubectl apply -f tekton/rbac.yaml
+
+# Tasks e Pipeline
+kubectl apply -f tekton/task-build.yaml
+kubectl apply -f tekton/task-deploy.yaml
+kubectl apply -f tekton/pipeline.yaml
+
+# Executar apenas o build
+kubectl apply -f tekton/taskrun-build.yaml
+```
+
 ## Observabilidade
 
 O middleware Prometheus coleta automaticamente:
@@ -212,9 +342,9 @@ O middleware Prometheus coleta automaticamente:
 - `http_requests_total` — contador por metodo, rota e status
 - `http_request_duration_seconds` — histograma de latencia
 
-Endpoint de metricas: `GET /api/v1/metrics`
+Endpoint de métricas: `GET /api/v1/metrics`
 
-No Kubernetes, o `ServiceMonitor` faz scraping automatico a cada 15s para integracao com Prometheus Operator.
+No Kubernetes, o `ServiceMonitor` faz scraping automático a cada 15s para o Prometheus Operator (instalado via kube-prometheus-stack pelo Terraform). O Grafana fica exposto pelo `k8s/grafana-ingress.yaml`.
 
 ## Estrutura do projeto
 
@@ -232,6 +362,8 @@ No Kubernetes, o `ServiceMonitor` faz scraping automatico a cada 15s para integr
 ├── docs/                  # Swagger (gerado pelo swag)
 ├── k8s/                   # Kubernetes manifests
 ├── chart/                 # Helm chart (Kind + OpenShift)
+├── terraform/             # IaC: namespace, Helm releases, Tekton
+├── tekton/                # Pipeline CI/CD (build Kaniko + deploy Helm)
 ├── Dockerfile             # Multi-stage distroless (35MB)
 ├── docker-compose.yml
 └── kind-config.yaml
@@ -250,9 +382,11 @@ No Kubernetes, o `ServiceMonitor` faz scraping automatico a cada 15s para integr
 - [x] Fase 1 — Docker multi-stage + distroless
 - [x] Fase 2 — MinIO upload de fotos
 - [x] Fase 3 — Kubernetes com Kind
-- [x] Fase 4 — Helm chart + metricas Prometheus
+- [x] Fase 4 — Helm chart + métricas Prometheus
 - [x] Fase 5 — Suporte a OpenShift
-- [ ] Fase 6 — CI/CD
+- [x] Fase 6 — IaC com Terraform (cluster, monitoring, Tekton)
+- [x] Fase 7 — CI/CD com Tekton (build Kaniko + deploy Helm)
+- [ ] Fase 8 — Triggers + webhook GitHub
 
 ## Autor
 
