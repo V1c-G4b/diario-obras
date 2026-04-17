@@ -1,0 +1,48 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-image
+  namespace: tekton-pipelines
+spec:
+  volumes:
+    - name: containerd-sock
+      hostPath:
+        path: /run/containerd
+        type: Directory
+  workspaces:
+    - name: source
+      description: codigo fonte clonado
+
+  params:
+    - name: image
+      description: nome da imagem a buildar
+      default: diario-obras-api:latest
+
+  steps:
+    - name: git-clone
+      image: alpine/git
+      workingDir: $(workspaces.source.path)
+      script: |
+        git clone https://github.com/v1c-g4b/diario-obras.git .
+
+    - name: build
+      image: gcr.io/kaniko-project/executor:latest
+      args:
+        - --dockerfile=Dockerfile
+        - --context=$(workspaces.source.path)
+        - --destination=$(params.image)
+        - --no-push
+        - --tar-path=$(workspaces.source.path)/image.tar
+        - --ignore-path=/product_uuid
+        - --ignore-path=/product_name
+
+    - name: kind-load
+      image: docker.io/library/alpine:3.19
+      volumeMounts:
+        - name: containerd-sock
+          mountPath: /run/containerd
+      script: |
+        apk add --no-cache containerd-ctr
+        ctr --address /run/containerd/containerd.sock \
+            --namespace k8s.io \
+            images import $(workspaces.source.path)/image.tar

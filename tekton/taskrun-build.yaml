@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1
+kind: TaskRun
+metadata:
+  name: build-image-run
+  namespace: tekton-pipelines
+spec:
+  taskRef:
+    name: build-image
+  workspaces:
+    - name: source
+      emptyDir: {}
