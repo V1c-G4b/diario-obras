@@ -4,6 +4,38 @@ API REST para registro digital de obras de construção civil. O engenheiro regi
 
 Projeto de estudo de **Go + Docker + Kubernetes + IaC + CI/CD** com arquitetura Ports and Adapters.
 
+## Destaques
+
+- **Imagem de ~600MB para 35MB** (-94%): multi-stage build + `distroless/static` rodando como `nonroot`, sem shell e sem package manager
+- **Build multi-arquitetura**: `--platform=$BUILDPLATFORM` + `TARGETOS`/`TARGETARCH` com `CGO_ENABLED=0` (builda no Mac ARM e roda em nó AMD64)
+- **Escala horizontal**: 2 réplicas da API com HPA escalando até 6 por CPU (70%)
+- **Um comando sobe tudo**: `terraform apply` provisiona namespace, Prometheus + Grafana, a aplicação via Helm e o Tekton
+- **CI/CD dentro do cluster**: pipeline Tekton com Kaniko, **sem registry externo** e **sem montar `docker.sock`**
+- **Observabilidade desde o início**: métricas RED (`http_requests_total`, `http_request_duration_seconds`) com scraping via `ServiceMonitor`
+- **Roda em Kind e em OpenShift** com o mesmo Helm chart
+
+## Decisões técnicas
+
+| Decisão | Por quê |
+|---------|---------|
+| Ports and Adapters | Domínio e casos de uso não dependem de Gin, GORM nem MinIO; cada adapter implementa uma interface em `domain/port` |
+| Distroless `nonroot` | Superfície de ataque mínima: sem shell, sem package manager, sem root |
+| Kaniko `--no-push --tar-path` + `ctr import` no namespace `k8s.io` | A imagem vai direto pro containerd do nó, visível pro kubelet, sem registry e sem expor o socket do Docker |
+| `ClusterRole` dedicado pro Tekton | A ServiceAccount do Tekton só ganha permissão nos tipos de recurso que o chart cria (Deployment, StatefulSet, Service, HPA, Ingress, ServiceMonitor...) |
+| `depends_on` entre `helm_release` | O chart da aplicação cria um `ServiceMonitor`, cuja CRD só existe depois do kube-prometheus-stack |
+| Tekton via `null_resource` + `kubectl apply` | O `release.yaml` oficial mistura CRDs e instâncias, o que o `kubernetes_manifest` não valida no plan. Trade-off: esse recurso fica sem state management |
+| Credenciais fora do git | Variáveis `sensitive = true`, `terraform.tfvars` e `values-secrets.yaml` no `.gitignore` |
+
+## English summary
+
+REST API in **Go** (Gin + GORM, Ports and Adapters) for digital construction-site logs: daily entries, progress, costs, weather, and photos stored in **MinIO** (S3). The project is a hands-on platform engineering study:
+
+- **Docker**: multi-stage distroless `nonroot` image, from ~600MB to **35MB**, with multi-arch builds
+- **Kubernetes** (Kind and OpenShift): StatefulSet for PostgreSQL, 2 API replicas with **HPA up to 6**, Ingress, and a Helm chart
+- **Terraform**: one `terraform apply` provisions the namespace, kube-prometheus-stack, the app, and Tekton
+- **Tekton CI/CD** inside the cluster: Kaniko build without an external registry or `docker.sock`, then a `helm upgrade`
+- **Observability**: Prometheus RED metrics scraped through a `ServiceMonitor`, visualized in Grafana
+
 ## Stack
 
 - **Go** (Gin + GORM) — API REST
@@ -242,7 +274,19 @@ erDiagram
 ## Rodando com Docker Compose
 
 ```bash
-cp .env.example .env
+# Criar o .env (gitignored) com as credenciais locais
+cat > .env <<EOF
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=diario
+DB_PASSWORD=troque-esta-senha
+DB_NAME=diario_obra
+MINIO_ENDPOINT=localhost:9000
+MINIO_USER=minio
+MINIO_PASSWORD=troque-esta-senha
+MINIO_BUCKET=diario-fotos
+EOF
+
 docker compose up -d
 curl http://localhost:8080/ping
 ```
@@ -277,17 +321,23 @@ curl http://localhost/ping
 ## Rodando com Helm
 
 ```bash
-# Criar secrets (editar com credenciais reais)
-cp chart/values-secrets.yaml chart/my-secrets.yaml
-# editar chart/my-secrets.yaml
+# Criar o arquivo de secrets (gitignored) com credenciais reais
+cat > chart/values-secrets.yaml <<EOF
+database:
+  user: diario
+  password: troque-esta-senha
+storage:
+  user: minio
+  password: troque-esta-senha
+EOF
 
 # Deploy local (Kind)
-helm install diario-obra ./chart -n diario-obra --create-namespace -f chart/my-secrets.yaml
+helm install diario-obra ./chart -n diario-obra --create-namespace -f chart/values-secrets.yaml
 
 # Deploy OpenShift
 helm install diario-obra ./chart -n diario-obra --create-namespace \
   -f chart/values-openshift.yaml \
-  -f chart/my-secrets.yaml
+  -f chart/values-secrets.yaml
 ```
 
 ## Provisionamento com Terraform
@@ -392,4 +442,4 @@ No Kubernetes, o `ServiceMonitor` faz scraping automático a cada 15s para o Pro
 
 Victor Gabriel — [@v1c-g4b](https://github.com/v1c-g4b)
 
-Acompanhe a jornada no [LinkedIn](https://linkedin.com/in/v1ctorg4briel) — #buildinpublic
+Acompanhe a jornada no [LinkedIn](https://www.linkedin.com/in/victorgabriel-engineer/) — #buildinpublic
